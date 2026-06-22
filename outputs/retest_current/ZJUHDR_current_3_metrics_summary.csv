@@ -1,0 +1,4 @@
+ref_name,dis_name,trc,display_model,vmaf_retest,wtpsnr_retest,psnrl100_retest,deltae_retest,cvvdp_gpu_calc
+Chimera13_1000nit.mp4,Chimera13_1000nit_NNVC_QP32.mp4,PQ,standard_hdr_pq_tv,94.424388,147.167,39.105,35.01,9.327388763427734
+Coffee1.mp4,Coffee1_DCVC-RT_QP0.mp4,HLG,standard_hdr_hlg_tv,62.166574,118.138,23.047,22.762,5.888773441314697
+Sparks2_1000nit.mp4,Sparks2_1000nit_LCEVC_QP21.mp4,PQ,standard_hdr_pq_tv,89.40755,138.713,38.483,34.15,9.23739242553711
