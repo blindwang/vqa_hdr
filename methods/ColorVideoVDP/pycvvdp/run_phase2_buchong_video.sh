@@ -1,0 +1,2 @@
+python run_cvvdp.py --test /data0/wangjiayi/all/Chimera5_1000nit*.mp4 --ref /data0/wangjiayi/all/Chimera5_1000nit.mp4 --display standard_hdr_pq_tv --result result_buchong/Chimera5_1000nit.csv --gpu-mem 16 --device cuda:7
+python run_cvvdp.py --test /data0/wangjiayi/all/Nocturne6_1000nit*.mp4 --ref /data0/wangjiayi/all/Nocturne6_1000nit.mp4 --display standard_hdr_pq_tv --result result_buchong/Nocturne6_1000nit.csv --gpu-mem 16 --device cuda:7

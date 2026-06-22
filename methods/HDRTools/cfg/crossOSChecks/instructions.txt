@@ -1,0 +1,21 @@
+EXR to YUV config file
+HDRTools/bin/JCTVC_CTC_cfgFiles/YCbCr/HDRConvertEXR2020ToYCbCr420.cfg
+
+inverse tranform:
+HDRTools/bin/JCTVC_CTC_cfgFiles/YCbCr/HDRConvertYCbCr420ToEXR2020.cfg
+
+HDRMetrics compare config:
+/HDRTools/bin/JCTVC_CTC_cfgFiles/YCbCr/HDRMetric_CfE.cfg
+
+sequences
+/Volumes/AppleVideoData/HDR Content/CFE/BalloonClip4000r1_1920x1080p_25_hf_709_ct2020_444
+/Volumes/AppleVideoData/HDR Content/CFE/FireEater2Clip4000r1_1920x1080p_25_hf_709_ct2020_444
+/Volumes/AppleVideoData/HDR Content/CFE/Market3Clip4000r2_1920x1080p_50_hf_709_ct2020_444
+/Volumes/AppleVideoData/HDR Content/CFE/Tibul2Clip4000r1_1920x1080p_30_hf_709_ct2020_444
+
+
+TIFF to YUV config file
+HDRTools/bin/JCTVC_CTC_cfgFiles/YCbCr/HDRConvertP3D65TiffToYCbCr420.cfg
+
+/Volumes/AppleVideoData/HDR Content/CFE/HDR_source_tiff/AutoWeldingClip4000
+/Volumes/AppleVideoData/HDR Content/CFE/HDR_source_tiff/BikeSparklersClip4000

@@ -1,0 +1,25 @@
+stages:
+  - build
+
+build_linux:
+  image: gcc
+  stage: build
+  before_script:
+    - apt update && apt -y install make autoconf cmake
+  script:
+    - mkdir build
+    - cd build
+    - cmake .. -DLIBPNG=ON -DLIBJPEG=ON
+    - make
+
+build_windows:
+  stage: build
+  tags: [saas-windows-medium-amd64]
+  before_script:
+    - choco install -y cmake
+    - $env:Path += ';C:\Program Files\CMake\bin'
+  script:
+    - mkdir build
+    - cd build
+    - cmake .. -DLIBPNG=ON -DLIBJPEG=ON -DWITH_SIMD=OFF
+    - cmake --build . --config Release

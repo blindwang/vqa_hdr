@@ -1,0 +1,2025 @@
+from __future__ import absolute_import
+
+import os
+import sys
+import unittest
+
+from vmaf.config import VmafConfig
+from vmaf.core.asset import Asset, NorefAsset
+from vmaf.core.quality_runner import VmafLegacyQualityRunner, VmafQualityRunner, \
+    PsnrQualityRunner, MsSsimQualityRunner, \
+    SsimQualityRunner, Adm2QualityRunner, VmafPhoneQualityRunner, VifQualityRunner, \
+    Vif2QualityRunner, BootstrapVmafQualityRunner, BaggingVmafQualityRunner, NiqeQualityRunner, \
+    EnsembleVmafQualityRunner, VmafnegQualityRunner
+from vmaf.core.result_store import FileSystemResultStore
+from vmaf.tools.stats import ListStats
+from vmaf.tools.misc import MyTestCase
+
+from test.testutil import set_default_576_324_videos_for_testing, set_default_flat_1920_1080_videos_for_testing, \
+    set_default_576_324_10bit_videos_for_testing, set_default_576_324_12bit_videos_for_testing
+
+__copyright__ = "Copyright 2016-2020, Netflix, Inc."
+__license__ = "BSD+Patent"
+
+
+class QualityRunnerTest(MyTestCase):
+
+    def tearDown(self):
+        if hasattr(self, 'runner'):
+            self.runner.remove_results()
+        super().tearDown()
+
+    def setUp(self):
+        super().setUp()
+        self.result_store = FileSystemResultStore()
+
+    def test_executor_id(self):
+        asset = Asset(dataset="test", content_id=0, asset_id=1,
+                      ref_path="dir/refvideo.yuv", dis_path="dir/disvideo.yuv",
+                      asset_dict={'width': 720, 'height': 480})
+        runner = VmafLegacyQualityRunner([asset], None)
+        self.assertEqual(runner.executor_id, 'VMAF_legacy_VF0.2.21-1.1')
+
+    def test_run_vmaf_legacy_runner(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafLegacyQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_score'], 0.44641939583333334, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion_score'], 4.0488208125, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_score'], 0.9345148541666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_ansnr_score'], 23.509571520833337, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion_score'], 4.0488208125, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_ansnr_score'], 31.271439270833337, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_legacy_score'], 65.37973881027465, places=3)
+        self.assertAlmostEqual(results[1]['VMAF_legacy_score'], 96.44432825242347, places=4)
+
+    def test_run_vmaf_legacy_runner_10le(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_10bit_videos_for_testing()
+
+        self.runner = VmafLegacyQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=False,
+            delete_workdir=True,
+            result_store=None
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_score'], 0.44641939583333334, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion_score'], 4.0488208125, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_score'], 0.9345148541666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_ansnr_score'], 23.509571520833333, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion_score'], 4.0488208125, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_ansnr_score'], 31.271439270833337, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_legacy_score'], 65.3797388102746, places=3)
+        self.assertAlmostEqual(results[1]['VMAF_legacy_score'], 96.44432825242347, places=4)
+
+    def test_run_vmaf_legacy_runner_12le(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_12bit_videos_for_testing()
+
+        self.runner = VmafLegacyQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=False,
+            delete_workdir=True,
+            result_store=None
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_score'], 0.5135746666666666, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion_score'], 2.931262333333333, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_score'], 0.9517763333333334, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_ansnr_score'], 24.906395333333336, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion_score'], 2.931262333333333, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_ansnr_score'], 31.004588333333334, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_legacy_score'], 72.19355058983041, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_legacy_score'], 95.94081991053078, places=4)
+
+    def test_run_vmaf_legacy_runner_with_result_store(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        result_store = FileSystemResultStore(logger=None)
+
+        self.runner = VmafLegacyQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=result_store
+        )
+
+        self.runner.run(parallelize=False)
+        result0, result1 = self.runner.results
+
+        # NOTE: since stored results are actually VMAF_feature's not VMAF's,
+        # the two paths below shouldn't exist
+        self.assertFalse(os.path.exists(result_store._get_result_file_path(result0)))
+        self.assertFalse(os.path.exists(result_store._get_result_file_path(result1)))
+
+        self.runner.run(parallelize=False)
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_score'], 0.44641939583333334, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion_score'], 4.0488208125, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_score'], 0.9345148541666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_ansnr_score'], 23.509571520833333, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion_score'], 4.0488208125, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_ansnr_score'], 31.271439270833337, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_legacy_score'], 65.3797388102746, places=3)
+        self.assertAlmostEqual(results[1]['VMAF_legacy_score'], 96.44432825242347, places=4)
+
+    def test_run_vmaf_runner_v1_model(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.model_path("other_models", "nflx_v1.json"),
+            },
+            optional_dict2=None,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_score'], 0.44641939583333334, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion_score'], 4.0488208125, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_score'], 0.9345148541666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_ansnr_score'], 23.5095715208, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion_score'], 4.0488208125, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_ansnr_score'], 31.2714392708, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 77.17677179233168, places=3)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 100.0, places=4)
+
+    def test_run_vmaf_runner(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 0.3636620710647402, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale1_score'], 0.7674952820232231, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale2_score'], 0.8631077727416296, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale3_score'], 0.9157200890843669, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale1_score'], 0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_adm2_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_ansnr_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 76.66783025, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_3threads(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict2={'n_threads': 3}
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 76.66783025, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_v061(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.model_path("vmaf_float_v0.6.1.json"),
+            }
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.3636595790491415, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.7674891489570371, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.8630881475272494, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.9156988075602461, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'],0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_vif_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_ansnr_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_motion_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 76.6674117983704, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_with_phone_score(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'enable_transform_score': True,
+            }
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 92.52169893578868, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 100.0, places=4)
+
+    def test_run_vmaf_phone_runner(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        with self.assertRaises(AssertionError):
+            VmafPhoneQualityRunner(
+                [asset, asset_original],
+                None, fifo_mode=True,
+                delete_workdir=True,
+                result_store=None,
+                optional_dict={
+                    'enable_transform_score': True,
+                }
+            )
+
+        self.runner = VmafPhoneQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={}
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_Phone_score'], 92.52169893578868, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_Phone_score'], 100.0, places=4)
+
+    def test_run_vmaf_runner_checkerboard(self):
+
+        ref_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_0_0.yuv")
+        dis_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_10_0.yuv")
+        dis_path2 = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_1_0.yuv")
+        asset = Asset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path,
+                      asset_dict={'width': 1920, 'height': 1080})
+
+        asset_original = Asset(dataset="test", content_id=0, asset_id=1,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=ref_path,
+                      asset_dict={'width': 1920, 'height': 1080})
+
+        asset2 = Asset(dataset="test", content_id=0, asset_id=2,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path2,
+                      asset_dict={'width': 1920, 'height': 1080})
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original, asset2],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=self.result_store,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale1_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale3_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_motion2_score'], 12.554711666666668, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_adm2_score'], 0.053996580527295335, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale0_score'], 0.999998395234, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale1_score'], 1.00000122625, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale2_score'], 0.999998263056, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale3_score'], 1.0000000801, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion2_score'], 12.554711666666668, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[2]['VMAF_integer_feature_vif_scale0_score'], 0.112931470868, places=4)
+        self.assertAlmostEqual(results[2]['VMAF_integer_feature_vif_scale1_score'], 0.2983721613615637, places=4)
+        self.assertAlmostEqual(results[2]['VMAF_integer_feature_vif_scale2_score'], 0.33743204896754614, places=4)
+        self.assertAlmostEqual(results[2]['VMAF_integer_feature_vif_scale3_score'], 0.496419716304, places=4)
+        self.assertAlmostEqual(results[2]['VMAF_integer_feature_motion2_score'], 12.554711666666668, places=4)
+        self.assertAlmostEqual(results[2]['VMAF_integer_feature_adm2_score'], 0.7853384465157921, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 7.985898744818505, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.14289994394608, places=4)
+        self.assertAlmostEqual(results[2]['VMAF_score'], 35.06866714286451, places=4)
+
+    def test_run_vmaf_runner_flat(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_flat_1920_1080_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=self.result_store,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale1_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale2_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale3_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_motion2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale0_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale1_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale2_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale3_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 97.42804264261031, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 97.428042675471147, places=4)
+
+    def test_run_vmaf_runner_with_norm_type_none(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=self.result_store,
+            optional_dict={
+                'model_filepath': VmafConfig.model_path("other_models", "nflxtrain_norm_type_none.json"),
+            },
+            optional_dict2=None,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.3636595790491415, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.7674891489570371, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.8630881475272494, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.9156988075602461, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion_score'], 4.0488208125, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'],0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion_score'], 4.0488208125, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 74.25604345163521, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 77.99516047916666, places=4)
+
+    def test_run_ensemblevmaf_runner_same_models(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = EnsembleVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.3636595790491415, places=4)
+
+        self.assertAlmostEqual(results[0]['EnsembleVMAF_model_0_score'], 76.66741179837054, places=4)
+        self.assertAlmostEqual(results[0]['EnsembleVMAF_model_1_score'], 76.66741179837054, places=4)
+        self.assertAlmostEqual(results[0]['EnsembleVMAF_score'], 76.66741179837054, places=4)
+
+    def test_run_ensemblevmaf_runner_different_models(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = EnsembleVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': [VmafConfig.model_path("vmaf_float_v0.6.1.json"), VmafConfig.model_path("other_models", "vmaf_v0.6.0.json")],
+            },
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.3636595790491415, places=4)
+
+        self.assertAlmostEqual(results[0]['EnsembleVMAF_model_0_score'], 76.6674117983703, places=4)
+        self.assertAlmostEqual(results[0]['EnsembleVMAF_model_1_score'], 81.77604343571005, places=3)
+        self.assertAlmostEqual(results[0]['EnsembleVMAF_score'], 79.221677703419, places=4)
+
+    def test_run_psnr_runner(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = PsnrQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+        self.assertAlmostEqual(results[0]['PSNR_score'], 30.755063979166664, places=4)
+        self.assertAlmostEqual(results[1]['PSNR_score'], 60.0, places=4)
+
+        self.assertAlmostEqual(results[0]['PSNR_scores'][2], 30.993823, places=4)
+
+    def test_run_ssim_runner(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = SsimQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            result_store=None
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['SSIM_score'], 0.86322654166666657, places=4)
+        self.assertAlmostEqual(results[0]['SSIM_feature_ssim_l_score'], 0.9981474583333334, places=4)
+        self.assertAlmostEqual(results[0]['SSIM_feature_ssim_c_score'], 0.96126793750000006, places=4)
+        self.assertAlmostEqual(results[0]['SSIM_feature_ssim_s_score'], 0.89773633333333336, places=4)
+
+        self.assertAlmostEqual(results[1]['SSIM_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['SSIM_feature_ssim_l_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['SSIM_feature_ssim_c_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['SSIM_feature_ssim_s_score'], 1.0, places=4)
+
+    def test_run_ms_ssim_runner(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = MsSsimQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            result_store=None
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['MS_SSIM_score'], 0.9632498125, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_l_scale0_score'], 0.9981474583333334, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_c_scale0_score'], 0.96126793750000006, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_s_scale0_score'], 0.89773633333333336, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_l_scale1_score'], 0.99899612500000001, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_c_scale1_score'], 0.9857694375, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_s_scale1_score'], 0.941185875, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_l_scale2_score'], 0.99923564583333324, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_c_scale2_score'], 0.997034020833, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_s_scale2_score'], 0.977992145833, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_l_scale3_score'], 0.99929210416666658, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_c_scale3_score'], 0.999588104167, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_s_scale3_score'], 0.99387125, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_l_scale4_score'], 0.99940356249999995, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_c_scale4_score'], 0.999907625, places=4)
+        self.assertAlmostEqual(results[0]['MS_SSIM_feature_ms_ssim_s_scale4_score'], 0.998222583333, places=4)
+
+        self.assertAlmostEqual(results[1]['MS_SSIM_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_l_scale0_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_c_scale0_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_s_scale0_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_l_scale1_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_c_scale1_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_s_scale1_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_l_scale2_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_c_scale2_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_s_scale2_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_l_scale3_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_c_scale3_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_s_scale3_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_l_scale4_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_c_scale4_score'], 1., places=4)
+        self.assertAlmostEqual(results[1]['MS_SSIM_feature_ms_ssim_s_scale4_score'], 1., places=4)
+
+    def test_run_vmaf_runner_pool_harmonic_mean(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        for result in results:
+            result.set_score_aggregate_method(ListStats.harmonic_mean)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 76.50890630088742, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.94504634354891, places=4)
+
+    def test_run_vmaf_runner_pool_perc10(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        for result in results:
+            result.set_score_aggregate_method(ListStats.perc10)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 72.71741317765458, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 100.0, places=4)
+
+    def test_run_adm2_runner(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = Adm2QualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['ADM2_score'], 0.9345149030293786, places=4)
+        self.assertAlmostEqual(results[1]['ADM2_score'], 1.0, places=4)
+
+    def test_run_vif_runner(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VifQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VIF_score'], 0.44642331250000006, places=4)
+        self.assertAlmostEqual(results[1]['VIF_score'], 1.0, places=4)
+
+    def test_run_vif2_runner(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = Vif2QualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VIF2_score'], 0.72749630372849, places=4)
+        self.assertAlmostEqual(results[1]['VIF2_score'], 1.0, places=4)
+
+    def test_run_vmaf_runner_with_transform_score(self):
+
+        ref_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_0_0.yuv")
+        dis_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_10_0.yuv")
+        asset = Asset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path,
+                      asset_dict={'width': 1920, 'height': 1080})
+
+        self.runner = VmafQualityRunner(
+            [asset],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            optional_dict={
+                'model_filepath': VmafConfig.test_resource_path("test_model_transform_add40.json"),
+                'enable_transform_score': True,
+            },
+            result_store=self.result_store,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion_score'], 12.5548366667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale0_score'], 0.23738393128710478, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale1_score'], 0.08524788663335138, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale2_score'], 0.024058909404945077, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale3_score'], 0.018034879735107798, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 32.757433750978919, places=4)
+
+    def test_run_vmaf_runner_with_transform_score_2(self):
+
+        ref_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_0_0.yuv")
+        dis_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_10_0.yuv")
+        asset = Asset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path,
+                      asset_dict={'width': 1920, 'height': 1080})
+
+        self.runner = VmafQualityRunner(
+            [asset],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            optional_dict={
+                'model_filepath': VmafConfig.test_resource_path("test_model_transform_add40_outltein.json"),
+                'enable_transform_score': True,
+                'disable_clip_score': True,
+            },
+            result_store=self.result_store,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion_score'], 12.5548366667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale0_score'], 0.23738393128710478, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale1_score'], 0.08524788663335138, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale2_score'], 0.024058909404945077, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale3_score'], 0.018034879735107798, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], -7.2425662490210838, places=4)
+
+    def test_run_vmaf_runner_with_transform_score3(self):
+
+        ref_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_0_0.yuv")
+        dis_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_10_0.yuv")
+        asset = Asset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path,
+                      asset_dict={'width': 1920, 'height': 1080})
+
+        self.runner = VmafQualityRunner(
+            [asset],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            optional_dict={
+                'model_filepath': VmafConfig.test_resource_path("test_model_transform_add40_piecewiselinear.json"),
+                'enable_transform_score': True,
+            },
+            result_store=self.result_store,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion_score'], 12.5548366667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale0_score'], 0.23738393128710478, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale1_score'], 0.08524788663335138, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale2_score'], 0.024058909404945077, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale3_score'], 0.018034879735107798, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 8.262602639723815, places=4)
+
+    def test_run_vmaf_runner_with_transform_score4(self):
+
+        ref_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_0_0.yuv")
+        dis_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_10_0.yuv")
+        asset = Asset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path,
+                      asset_dict={'width': 1920, 'height': 1080})
+
+        self.runner = VmafQualityRunner(
+            [asset],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            optional_dict={
+                'model_filepath': VmafConfig.test_resource_path("test_model_transform_add40_piecewiselinear_forced.json"),
+            },
+            result_store=self.result_store,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion_score'], 12.5548366667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale0_score'], 0.23738393128710478, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale1_score'], 0.08524788663335138, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale2_score'], 0.024058909404945077, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale3_score'], 0.018034879735107798, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 8.262602639723815, places=4)
+
+    def test_run_vmaf_runner_with_transform_score_both_specified(self):
+
+        ref_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_0_0.yuv")
+        dis_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_10_0.yuv")
+        asset = Asset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path,
+                      asset_dict={'width': 1920, 'height': 1080})
+
+        self.runner = VmafQualityRunner(
+            [asset],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            optional_dict={
+                'model_filepath': VmafConfig.test_resource_path("test_model_transform_add40_piecewiselinear_forced.json"),
+                'enable_transform_score': True,
+            },
+            result_store=self.result_store,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 8.262602639723815, places=4)
+
+    def test_run_vmaf_runner_with_transform_score_disabled(self):
+
+        ref_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_0_0.yuv")
+        dis_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_10_0.yuv")
+        asset = Asset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path,
+                      asset_dict={'width': 1920, 'height': 1080})
+
+        self.runner = VmafQualityRunner(
+            [asset],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            optional_dict={
+                'model_filepath': VmafConfig.test_resource_path("test_model_transform_add40.json"),
+                'enable_transform_score': False,
+            },
+            result_store=self.result_store,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion_score'], 12.5548366667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale0_score'], 0.23738393128710478, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale1_score'], 0.08524788663335138, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale2_score'], 0.024058909404945077, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm_scale3_score'], 0.018034879735107798, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 0.0, places=4)
+
+    def test_run_vmaf_runner_with_transform_for_phone(self):
+
+        ref_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_0_0.yuv")
+        dis_path = VmafConfig.test_resource_path("yuv", "checkerboard_1920_1080_10_3_10_0.yuv")
+        asset = Asset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path,
+                      asset_dict={'width': 1920, 'height': 1080})
+
+        self.runner = VmafQualityRunner(
+            [asset],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            optional_dict={
+                'enable_transform_score': True,
+            },
+            result_store=self.result_store,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale1_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale3_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_motion2_score'], 12.554711666666668, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_adm2_score'], 0.053996580527295335, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 14.98274738501623, places=4)
+
+    def test_run_bootstrap_vmaf_runner(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = BootstrapVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.test_resource_path('model', 'vmafplus_v0.5.2boot_test.json'),
+            },
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.3636595790491415, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.7674891489570371, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.8630881475272494, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.9156988075602461, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'],0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_vif_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_ansnr_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_motion_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_score'], 75.4098201266391, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_score'], 99.95804893252175, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_bagging_score'], 75.1008874780893, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_bagging_score'], 99.96504855577571, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_stddev_score'], 0.6782184714837541, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_stddev_score'], 0.03947607207290399, places=4)
+
+    def test_run_bootstrap_vmaf_runner_with_transform_score(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = BootstrapVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.test_resource_path('model', 'vmafplus_v0.5.2boot_test.json'),
+                'enable_transform_score': True,
+            },
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_score'], 91.70055413913794, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_score'], 100.0, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_bagging_score'], 91.49435511835851, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_bagging_score'], 100.0, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_stddev_score'], 0.4587790260323399, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_stddev_score'], 0.0, places=10)
+
+    def test_run_bootstrap_vmaf_runner_specific_model(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = BootstrapVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.model_path('vmaf_rb_v0.6.2', 'vmaf_rb_v0.6.2.json'),
+            },
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_score'], 75.40982012663909, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_score'], 99.95804893252175, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_bagging_score'], 73.10547190141426, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_bagging_score'], 99.68537901491972, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_stddev_score'], 1.2281352566804813, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_stddev_score'], 1.5917514683608882, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_ci95_low_score'], 70.80670791674116, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_ci95_low_score'], 94.7834130887179, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_ci95_high_score'], 74.85640420581932, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_ci95_high_score'], 99.992560767034618, places=4)
+
+    def test_run_bootstrap_vmaf_runner_residue_bootstrap_model(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = BootstrapVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.model_path('vmaf_rb_v0.6.3', 'vmaf_rb_v0.6.3.json'),
+            },
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_score'], 75.40982012663913, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_score'], 99.95804893252175, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_bagging_score'], 73.10797720731026, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_bagging_score'], 99.78938542188111, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_stddev_score'], 1.1971875179455416, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_stddev_score'], 1.3057270008154538, places=3)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_ci95_low_score'], 70.82980423573689, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_ci95_low_score'], 94.79560574289447, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_ci95_high_score'], 74.8532602003098, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_ci95_high_score'], 99.99736657892976, places=4)
+
+    def test_run_bootstrap_vmaf_runner_default_model(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = BootstrapVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_score'], 75.41011890598992, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_score'], 99.95804893252175, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_bagging_score'], 74.93529671341122, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_bagging_score'], 99.93908291255723, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_stddev_score'], 1.3159290723692074, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_stddev_score'], 0.09930398700617331, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_ci95_low_score'], 72.95835553756686, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_ci95_low_score'], 91.11407102849, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_ci95_high_score'], 77.36647719076497, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_ci95_high_score'], 100.0, places=4)
+
+    def test_run_bootstrap_vmaf_runner_default_model_with_transform_score(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = BootstrapVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'enable_transform_score': True,
+            }
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_score'], 91.70080351460331, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_score'], 100.0, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_bagging_score'], 91.38556127698827, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_bagging_score'], 100.0, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_stddev_score'], 0.8797540835196825, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_stddev_score'], 0.0, places=4)
+
+    def test_run_bootstrap_vmaf_runner_10models(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = BootstrapVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.test_resource_path('model', 'vmafplus_v0.5.2boot_test2.json'),
+            },
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_score'], 75.4098201266392, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_score'], 99.95804893252175, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_bagging_score'], 75.14163791740515, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_bagging_score'], 99.9640738745435, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_stddev_score'], 1.4202055545770627, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_stddev_score'], 0.03321535846597722, places=4)
+
+    def test_run_bagging_vmaf_runner(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = BaggingVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.test_resource_path('model', 'vmafplus_v0.5.2boot_test.json'),
+            },
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.3636595790491415, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.7674891489570371, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.8630881475272494, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.9156988075602461, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'],0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_vif_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_ansnr_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_motion_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['BAGGING_VMAF_score'], 75.1008874780893, places=4)
+        self.assertAlmostEqual(results[1]['BAGGING_VMAF_score'], 99.965048555775709, places=4)
+        self.assertAlmostEqual(results[0]['BAGGING_VMAF_bagging_score'], 75.1008874780893, places=4)
+        self.assertAlmostEqual(results[1]['BAGGING_VMAF_bagging_score'], 99.965048555775709, places=4)
+        self.assertAlmostEqual(results[0]['BAGGING_VMAF_stddev_score'], 0.6782184714837746, places=4)
+        self.assertAlmostEqual(results[1]['BAGGING_VMAF_stddev_score'], 0.03947607207290399, places=4)
+
+    @unittest.skipIf(sys.version_info < (3,), reason="For py3 only: model not supported by py2.")
+    def test_run_niqe_runner(self):
+
+        ref1_path = VmafConfig.test_resource_path("test_image_yuv", "100007.yuv")
+        ref2_path = VmafConfig.test_resource_path("test_image_yuv", "100039.yuv")
+        asset1 = NorefAsset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      dis_path=ref1_path,
+                      asset_dict={'width': 481, 'height': 321, 'yuv_type': 'yuv444p'})
+
+        asset2 = NorefAsset(dataset="test", content_id=0, asset_id=1,
+                      workdir_root=VmafConfig.workdir_path(),
+                      dis_path=ref2_path,
+                      asset_dict={'width': 481, 'height': 321, 'yuv_type': 'yuv444p'})
+
+        self.runner = NiqeQualityRunner(
+            [asset1, asset2],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+        self.assertAlmostEqual(results[0]['NIQE_score'], 4.8656072348129422, places=4)
+        self.assertAlmostEqual(results[1]['NIQE_score'], 2.9309929860778756, places=2)
+
+    def test_run_vmaf_runner_with_4k_1d5H_model(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.model_path("vmaf_4k_v0.6.1.json"),
+            },
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 84.94993851497509, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 100.0, places=4)
+
+    def test_run_bootstrap_vmaf_runner_with_4k_1d5H_model(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = BootstrapVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.model_path('vmaf_4k_rb_v0.6.2', 'vmaf_4k_rb_v0.6.2.json'),
+            },
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_score'], 84.94985671291977, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_score'], 100.0, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_bagging_score'], 83.96882400192007, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_bagging_score'], 99.976138971781452, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_stddev_score'], 0.927549793485079, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_stddev_score'], 0.03627354379389184, places=4)
+
+    def test_run_vmaf_runner_with_bootstrap_model(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.test_resource_path('model', 'vmafplus_v0.5.2_test.json'),
+            },
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 75.40982012663899, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.95804893252175, places=4)
+
+    def test_run_vmaf_runner_input160x90(self):
+
+        ref_path = VmafConfig.test_resource_path("yuv", "ref_test_0_1_src01_hrc00_576x324_576x324_vs_src01_hrc01_576x324_576x324_q_160x90.yuv")
+        dis_path = VmafConfig.test_resource_path("yuv", "dis_test_0_1_src01_hrc00_576x324_576x324_vs_src01_hrc01_576x324_576x324_q_160x90.yuv")
+        asset = Asset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path,
+                      asset_dict={'width': 160, 'height': 90})
+
+        asset_original = Asset(dataset="test", content_id=0, asset_id=1,
+                               workdir_root=VmafConfig.workdir_path(),
+                               ref_path=ref_path,
+                               dis_path=ref_path,
+                               asset_dict={'width': 160, 'height': 90})
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 0.6895391472210215, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale1_score'], 0.9576202275437821, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale2_score'], 0.97696930627404, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale3_score'], 0.9829181243754922, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_motion2_score'], 1.3577417291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_adm2_score'], 0.9807496975664337, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale1_score'],0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion2_score'], 1.3577417291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_adm2_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_ansnr_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 92.52095888042386, places=2)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.30667316266532, places=4)
+
+    def test_run_vmaf_runner_json_model(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.model_path("vmaf_float_v0.6.1.json"),
+            }
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.3636595790491415, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.7674891489570371, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.8630881475272494, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.9156988075602461, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'],0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_vif_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_ansnr_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_feature_motion_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 76.66741179837048, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_bootstrap_vmaf_runner_default_model_json_model(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = BootstrapVmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'model_filepath': VmafConfig.model_path("vmaf_float_b_v0.6.3.json"),
+            }
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_score'], 75.40982012663915, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_score'], 99.95804893252175, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_bagging_score'], 74.93511444833854, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_bagging_score'], 99.93908291255723, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_stddev_score'], 1.3161258404304899, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_stddev_score'], 0.09930398700617331, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_ci95_low_score'], 72.9578340986488, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_ci95_low_score'], 91.11369309032479, places=4)
+        self.assertAlmostEqual(results[0]['BOOTSTRAP_VMAF_ci95_high_score'], 77.36719296033387, places=4)
+        self.assertAlmostEqual(results[1]['BOOTSTRAP_VMAF_ci95_high_score'], 100.0, places=4)
+
+    def test_run_vmaf_runner_motion_force_zero(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.model_path('other_models', 'vmaf_v0.6.1mfz.json')}
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 0.3636620710647402, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale1_score'], 0.7674952820232231, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale2_score'], 0.8631077727416296, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale3_score'], 0.9157200890843669, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_motion2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale1_score'], 0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_adm2_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_ansnr_score'], 1.0, places=4)
+
+        with self.assertRaises(KeyError):
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 72.3205499536087, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 97.42835406898242, places=4)
+
+    def test_run_vmaf_runner_neg_mode(self):
+        ref_path = VmafConfig.test_resource_path("yuv", "refp_vmaf_hacking_investigation_0_0_akiyo_cif_notyuv_0to0_identity_vs_akiyo_cif_notyuv_0to0_multiply_q_352x288")
+        dis_path = VmafConfig.test_resource_path("yuv", "disp_vmaf_hacking_investigation_0_0_akiyo_cif_notyuv_0to0_identity_vs_akiyo_cif_notyuv_0to0_multiply_q_352x288")
+        asset = Asset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path,
+                      asset_dict={'width': 352, 'height': 288})
+
+        self.runner = VmafnegQualityRunner(
+            [asset],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+        )
+        self.runner.run(parallelize=False)
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAFNEG_score'], 88.030463, places=4)  # 132.7329528948058
+
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 0.9837079355759384, places=4)
+        with self.assertRaises(KeyError):
+            _ = results[0]['VMAF_integer_feature_vif_scale0_egl_1_score']  # egl_1 not in feature name
+
+    def test_run_vmaf_runner_float_neg_mode(self):
+        ref_path = VmafConfig.test_resource_path("yuv", "refp_vmaf_hacking_investigation_0_0_akiyo_cif_notyuv_0to0_identity_vs_akiyo_cif_notyuv_0to0_multiply_q_352x288")
+        dis_path = VmafConfig.test_resource_path("yuv", "disp_vmaf_hacking_investigation_0_0_akiyo_cif_notyuv_0to0_identity_vs_akiyo_cif_notyuv_0to0_multiply_q_352x288")
+        asset = Asset(dataset="test", content_id=0, asset_id=0,
+                      workdir_root=VmafConfig.workdir_path(),
+                      ref_path=ref_path,
+                      dis_path=dis_path,
+                      asset_dict={'width': 352, 'height': 288})
+
+        self.runner = VmafQualityRunner(
+            [asset],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'disable_clip_score': True, 'model_filepath': VmafConfig.model_path("vmaf_float_v0.6.1neg.json")}
+        )
+        self.runner.run(parallelize=False)
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 88.02858535506459, places=2)  # 132.7329528948058
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.983699021577095, places=4)
+        with self.assertRaises(KeyError):
+            _ = results[0]['VMAF_feature_vif_scale0_egl_1_score']  # egl_1 not in feature name
+
+    def test_run_vmaf_runner_nvd6(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_v0.6.1_nvd6.json')}
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 0.3636620710647402, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale1_score'], 0.7674952820232231, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale2_score'], 0.8631077727416296, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale3_score'], 0.9157200890843669, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_adm2_score'], 0.9535583604166833, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale1_score'], 0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 80.60039170534735, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_float_nvd6(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_float_v0.6.1_nvd6.json')}
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.3636595790491415, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.7674891489570371, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.8630881475272494, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.9156988075602461, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9535689329913465, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'],0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 80.60027040650554, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_rdh540(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=False,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_v0.6.1_rdh540.json')}
+        )
+
+        # current implementation is limited by the 16-bit data pipeline, thus
+        # cannot handle an angular frequency smaller than 1080p * 3H
+        with self.assertRaises(AssertionError):
+            self.runner.run(parallelize=False)
+
+            results = self.runner.results
+
+            self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 0.3636620710647402, places=4)
+            self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale1_score'], 0.7674952820232231, places=4)
+            self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale2_score'], 0.8631077727416296, places=4)
+            self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale3_score'], 0.9157200890843669, places=4)
+            self.assertAlmostEqual(results[0]['VMAF_integer_feature_motion2_score'], 3.8943597291666667, places=4)
+            self.assertAlmostEqual(results[0]['VMAF_integer_feature_adm2_score'], 0.9179700081140197, places=4)
+
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale0_score'], 1.00000001415, places=4)
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale1_score'], 0.99999972612, places=4)
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale2_score'], 0.999999465724, places=4)
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale3_score'], 0.999999399683, places=4)
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion2_score'], 3.8943597291666667, places=4)
+            self.assertAlmostEqual(results[1]['VMAF_integer_feature_adm2_score'], 1.0, places=4)
+
+            self.assertAlmostEqual(results[0]['VMAF_score'], 73.40010627727987, places=4)
+            self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_float_rdh540(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_float_v0.6.1_rdh540.json')}
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.3636595790491415, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.7674891489570371, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.8630881475272494, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.9156988075602461, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9179700081140197, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'],0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 73.27248246860195, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_rdh2160_nvd1d5(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_v0.6.1_rdh2160_nvd1d5.json')}
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 0.3636620710647402, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale1_score'], 0.7674952820232231, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale2_score'], 0.8631077727416296, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale3_score'], 0.9157200890843669, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale1_score'], 0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_adm2_score'], 1.0, places=4)
+
+    def test_run_vmaf_runner_float_vifks3o2(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_float_v0.6.1_vifks3o2.json')},
+            optional_dict2={'disable_avx': False},
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.3861616186790285, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.8751422652833561, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.93652809011707, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.960645576541984, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'], 0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 82.59755475201645, places=3)  # pyvmaf: 82.54348985454762
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_float_vifks24o10(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_float_v0.6.1_vifks24o10.json')},
+            optional_dict2={'disable_avx': False},
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.4060198772536953, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.9310491573906559, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.9642544958766202, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.9778185149650498, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'], 0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 85.07541075459393, places=3)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_float_vifks360o97(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_float_v0.6.1_vifks360o97.json')},
+            optional_dict2={'disable_avx': False},
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.4263953170358315, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.9611848614238534, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.977855114559413, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.9829845813744615, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'], 0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 86.07960054155262, places=3)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_float_vifks1o2(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_float_v0.6.1_vifks1o2.json')},
+            optional_dict2={'disable_avx': False},
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.3339409599929981, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.6084533246171074, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.7512585326506199, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.8742467113219519, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'],0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 71.24424733205448, places=2)  # pyvmaf: 71.13985273109745
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_float_vifks2(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_float_v0.6.1_vifks2.json')},
+            optional_dict2={'disable_avx': False},
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.39857285405085036, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.9096751652352998, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.9539386820085598, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.9721655931648531, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9344888814000374, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 84.1901817483129, places=2)  # pyvmaf: 84.15127130907281
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_float_vifks2o3(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_float_v0.6.1_vifks2o3.json')},
+            optional_dict2={'disable_avx': False},
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale0_score'], 0.35063512294952215, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale1_score'], 0.7008169620118055, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale2_score'], 0.8416977382019878, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_vif_scale3_score'], 0.9083094326306004, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_feature_adm2_score'], 0.9344888814000374, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale0_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale1_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale2_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_vif_scale3_score'], 1.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 75.77499080358565, places=2)  # pyvmaf: 72.97880576181906
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.946416604585025, places=4)
+
+    def test_run_vmaf_runner_flat_save_workfiles_fifo_true(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_flat_1920_1080_videos_for_testing()
+
+        with self.assertRaises(AssertionError) as ctx:
+            self.runner = VmafQualityRunner(
+                [asset, asset_original],
+                None, fifo_mode=True,
+                delete_workdir=True,
+                result_store=self.result_store,
+                save_workfiles=True,
+            )
+            self.runner.run(parallelize=False)
+        self.assertTrue('To save workfiles, FIFO mode cannot be true.' in str(ctx.exception))
+
+    def test_run_vmaf_runner_with_param_neg(self):
+        """
+        By the rule in FeatureAssembler._get_fextractor_instance(), there is no feature_option_dict specified in the
+        default model file vmaf_v0.6.1.json, so the fields in optional_dict kicks in.
+        """
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=False,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={'vif_enhn_gain_limit': 1.0, 'adm_enhn_gain_limit': 1.0},
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 0.3636620710647402, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale1_score'], 0.7648294563297106, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale2_score'], 0.8585079136153025, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale3_score'], 0.9092599837535159, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_adm2_score'], 0.9298444431333371, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale1_score'], 0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion2_score'], 3.8943597291666667, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 75.07365712709452, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.94635786905758, places=4)
+
+    def test_run_vmaf_runner_with_param_neg_and_model_mfz(self):
+        """
+        By the rule in FeatureAssembler._get_fextractor_instance(), use feature_option_dict specified in the
+        default model file vmaf_v0.6.1mfz.json; the field 'vif_enhn_gain_limit' etc. has no effect.
+        """
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=False,
+            delete_workdir=True,
+            result_store=None,
+            optional_dict={
+                'vif_enhn_gain_limit': 1.0, 'adm_enhn_gain_limit': 1.0,  # no effect
+                'model_filepath': VmafConfig.model_path('other_models', 'vmaf_v0.6.1mfz.json')
+            },
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale0_score'], 0.3636620710647402, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale1_score'], 0.7674952820232231, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale2_score'], 0.8631077727416296, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_vif_scale3_score'], 0.9157200890843669, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_motion2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[0]['VMAF_integer_feature_adm2_score'], 0.9345149030293786, places=4)
+
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale0_score'], 1.00000001415, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale1_score'], 0.99999972612, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale2_score'], 0.999999465724, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_vif_scale3_score'], 0.999999399683, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_motion2_score'], 0.0, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_integer_feature_adm2_score'], 1.0, places=4)
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 72.3205498755804, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 97.42835406898269, places=4)
+
+
+class QualityRunnerVersionTest(MyTestCase):
+
+    def test_vmaf_quality_runner_version(self):
+        self.assertEqual(VmafQualityRunner.VERSION, 'F0.2.21int-0.6.1')
+        self.assertEqual(VmafQualityRunner.ALGO_VERSION, 4)
+
+
+class QualityRunnerResultStoreTest(MyTestCase):
+
+    def tearDown(self):
+        if hasattr(self, 'runner'):
+            self.runner.remove_results()
+        super().tearDown()
+
+    def setUp(self):
+        super().setUp()
+        self.result_store = FileSystemResultStore()
+
+    def test_quality_runner_with_different_models(self):
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner1 = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=self.result_store,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_float_v0.6.1_rdh540.json')}
+        )
+        self.runner1.run(parallelize=False)
+        results1 = self.runner1.results
+
+        self.runner2 = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=True,
+            delete_workdir=True,
+            result_store=self.result_store,
+            optional_dict={'model_filepath': VmafConfig.test_resource_path('model', 'vmaf_float_v0.6.1_nvd6.json')}
+        )
+        self.runner2.run(parallelize=False)
+        results2 = self.runner2.results
+
+        self.assertAlmostEqual(results1[0]['VMAF_score'], 73.27248246860131, places=4)
+        self.assertAlmostEqual(results1[1]['VMAF_score'], 99.946416604585025, places=4)
+
+        self.assertAlmostEqual(results2[0]['VMAF_score'], 80.60027040650554, places=4)
+        self.assertAlmostEqual(results2[1]['VMAF_score'], 99.946416604585025, places=4)
+
+
+class QualityRunnerSaveWorkfilesTest(MyTestCase):
+
+    def tearDown(self):
+        if hasattr(self, 'runner'):
+            self.runner.remove_results()
+        super().tearDown()
+
+    def setUp(self):
+        super().setUp()
+        self.result_store = FileSystemResultStore()
+
+    def test_run_vmaf_runner_flat_save_workfiles(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = VmafQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=False,
+            delete_workdir=True,
+            result_store=self.result_store,
+            save_workfiles=True,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['VMAF_score'], 76.66783041117395, places=4)
+        self.assertAlmostEqual(results[1]['VMAF_score'], 99.94642662500576, places=4)
+
+    def test_run_psnr_runner_flat_save_workfiles(self):
+
+        ref_path, dis_path, asset, asset_original = set_default_576_324_videos_for_testing()
+
+        self.runner = PsnrQualityRunner(
+            [asset, asset_original],
+            None, fifo_mode=False,
+            delete_workdir=True,
+            result_store=self.result_store,
+            save_workfiles=True,
+        )
+        self.runner.run(parallelize=False)
+
+        results = self.runner.results
+
+        self.assertAlmostEqual(results[0]['PSNR_score'], 30.755063979166668, places=4)
+        self.assertAlmostEqual(results[1]['PSNR_score'], 60.0, places=4)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

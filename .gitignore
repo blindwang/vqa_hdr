@@ -14,3 +14,18 @@ tools/bin/
 methods/HDRTools/build/
 methods/vmaf/libvmaf/build/
 methods/**/.git/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.mex*
+
+# 推理必需二进制例外
+!methods/HDRTools/build/
+!methods/HDRTools/build/bin/
+!methods/HDRTools/build/bin/HDRMetrics
+!methods/HDRTools/build/bin/HDRConvert
+!methods/vmaf/libvmaf/build/
+!methods/vmaf/libvmaf/build/tools/
+!methods/vmaf/libvmaf/build/tools/vmaf
