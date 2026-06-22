@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+
+# 本机测试数据与输出
+outputs/
+dist/
+*.xlsx
+*.docx
+ZJUHDR*.csv
+mos_val.xlsx
+
+# 本机工具与编译产物
+tools/bin/
+methods/HDRTools/build/
+methods/vmaf/libvmaf/build/
+methods/**/.git/

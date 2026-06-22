@@ -1,0 +1,54 @@
+frameworks:
+  ColorVideoVDP:
+    gpu_mem: 16
+    metric: cvvdp
+    workdir: methods/ColorVideoVDP
+
+  HDRMetrics:
+    hdrtools_bin: methods/HDRTools/build/bin
+    wpsnr_cfg: methods/HDRTools/cfg/HDRMetricsYUV.cfg
+    hdrconvert_cfg: methods/HDRTools/cfg/JCTVC_CTC_cfgFiles/YCbCr/HDRConvertYCbCr420ToEXR2020.cfg
+    deltae_cfg: methods/HDRTools/cfg/JCTVC_CTC_cfgFiles/YCbCr/HDRMetric_CfE.cfg
+    weight_table: methods/HDRTools/cfg/hdrTable.txt
+    width: 3840
+    height: 2160
+    bit_depth: 10
+    workdir: methods/HDRMetrics
+
+  VMAF:
+    b: 10
+    h: 2160
+    vmaf_bin: methods/vmaf/libvmaf/build/tools/vmaf
+    model: path=methods/vmaf/model/vmaf_4k_v0.6.1.json
+    p: '420'
+    w: 3840
+    enable_pu21: flase
+
+global:
+  device: cuda:5
+  num_workers: 1
+  output_dir: /data1/Users/wangjiayi/workspace/vqa_multi/vqa_infer_result
+
+datasets:
+    ZJUHDR_full:
+        type: TestVideoSet
+        test_data: /data1/Users/wangjiayi/workspace/zjuvqa/ZJUHDR-info-mp4-all.csv
+        ref_dir: /data0/wangjiayi/all/
+        dis_dir: /data0/wangjiayi/all/
+        lower_better: False
+
+global:
+    num_workers: 1
+    output_dir: /data1/Users/wangjiayi/workspace/vqa_multi/vqa_infer_result
+    device: cuda:6
+runs:
+- datasets:
+  - ZJUHDR_full
+  framework: VMAF
+- datasets:
+  - ZJUHDR_full
+  framework: ColorVideoVDP
+
+
+
+                                   
