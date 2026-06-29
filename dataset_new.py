@@ -62,7 +62,15 @@ def _run_dataset(framework, fw_cfg, ds_name, ds_cfg, global_cfg, out_root):
     videos = _expand_zjuhdr_from_csv(test_data, ref_dir, dist_dir)
 
     display_model = ds_cfg.get("display_model")
-    if display_model:
+    display_model_by_trc = ds_cfg.get("display_model_by_trc", {})
+    if display_model_by_trc:
+        # 同一实验室可能混有 PQ/HLG，按 trc 精确选择对应的显示模型。
+        model_map = {str(k).upper(): v for k, v in display_model_by_trc.items()}
+        for v in videos:
+            trc = str(v.get("trc", "")).upper()
+            if trc in model_map:
+                v["display_model"] = model_map[trc]
+    elif display_model:
         for v in videos:
             v["display_model"] = display_model
 

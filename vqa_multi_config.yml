@@ -22,33 +22,50 @@ frameworks:
     model: path=methods/vmaf/model/vmaf_4k_v0.6.1.json
     p: '420'
     w: 3840
-    enable_pu21: flase
+    enable_pu21: false
 
 global:
-  device: cuda:5
-  num_workers: 1
-  output_dir: /data1/Users/wangjiayi/workspace/vqa_multi/vqa_infer_result
+  device: cuda:0
+  num_workers: 4
+  output_dir: /mnt/bn/public-vqa1/wangjiayi/hdr-vqa-outputs/zjuhdr_lab_cvvdp_display_models
 
 datasets:
-    ZJUHDR_full:
+    ZJUHDR_HW:
         type: TestVideoSet
-        test_data: /data1/Users/wangjiayi/workspace/zjuvqa/ZJUHDR-info-mp4-all.csv
-        ref_dir: /data0/wangjiayi/all/
-        dis_dir: /data0/wangjiayi/all/
+        test_data: /mnt/bn/public-vqa1/wangjiayi/playground/hdr-vqa/ZJUHDR-info-mp4-HW.csv
+        ref_dir: /mnt/bn/public-vqa1/wangjiayi/ZJUHDR/ref_mp4
+        dis_dir: /mnt/bn/public-vqa1/wangjiayi/ZJUHDR/val_mp4
+        display_model_by_trc:
+          PQ: avs_hdr_set2_pq
+          HLG: avs_hdr_set2_hlg
         lower_better: False
 
-global:
-    num_workers: 1
-    output_dir: /data1/Users/wangjiayi/workspace/vqa_multi/vqa_infer_result
-    device: cuda:6
+    ZJUHDR_MLS:
+        type: TestVideoSet
+        test_data: /mnt/bn/public-vqa1/wangjiayi/playground/hdr-vqa/ZJUHDR-info-mp4-MLS.csv
+        ref_dir: /mnt/bn/public-vqa1/wangjiayi/ZJUHDR/ref_mp4
+        dis_dir: /mnt/bn/public-vqa1/wangjiayi/ZJUHDR/val_mp4
+        display_model_by_trc:
+          PQ: avs_hdr_set3_pq
+          HLG: avs_hdr_set3_hlg
+        lower_better: False
+
+    ZJUHDR_WHU:
+        type: TestVideoSet
+        test_data: /mnt/bn/public-vqa1/wangjiayi/playground/hdr-vqa/ZJUHDR-info-mp4-WHU.csv
+        ref_dir: /mnt/bn/public-vqa1/wangjiayi/ZJUHDR/ref_mp4
+        dis_dir: /mnt/bn/public-vqa1/wangjiayi/ZJUHDR/val_mp4
+        display_model_by_trc:
+          PQ: avs_hdr_set2_pq
+          HLG: avs_hdr_set2_hlg
+        lower_better: False
 runs:
 - datasets:
-  - ZJUHDR_full
-  framework: VMAF
-- datasets:
-  - ZJUHDR_full
+  - ZJUHDR_HW
+  - ZJUHDR_MLS
+  - ZJUHDR_WHU
   framework: ColorVideoVDP
 
 
 
-                                   
+
