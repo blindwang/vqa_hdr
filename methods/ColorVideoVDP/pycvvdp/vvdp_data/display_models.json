@@ -156,7 +156,7 @@
       "diagonal_size_inches": 65,
       "max_luminance": 1404,
       "contrast": 1000000,
-      "E_ambient": 0,
+      "E_ambient": 5,
       "source": "AVS HDR objective quality assessment proposal N4268 appendix 1" },
 
   "avs_hdr_set2_pq": {
@@ -178,7 +178,7 @@
       "diagonal_size_inches": 32,
       "max_luminance": 1420,
       "contrast": 1000000,
-      "E_ambient": 0,
+      "E_ambient": 5,
       "source": "AVS HDR objective quality assessment proposal N4268 appendix 1" },
 
   "avs_hdr_set3_pq": {
@@ -202,7 +202,7 @@
       "diagonal_size_inches": 31.1,
       "max_luminance": 3924.18,
       "contrast": 1000000,
-      "E_ambient": 0,
+      "E_ambient": 5,
       "source": "AVS HDR objective quality assessment proposal N4268 appendix 1" },
 
   "avs_hdr_set4_pq": {
@@ -224,7 +224,7 @@
       "diagonal_size_inches": 32,
       "max_luminance": 1420,
       "contrast": 1000000,
-      "E_ambient": 0,
+      "E_ambient": 5,
       "source": "AVS HDR objective quality assessment proposal N4268 appendix 1" },
 
   "standard_hdr_hlg": {
